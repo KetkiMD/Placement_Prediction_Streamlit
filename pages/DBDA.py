@@ -102,10 +102,9 @@ data = {
     'Higher_Edu_Percent':higher_edu_percent,
     'branch_cleaned': branch
 }
-course="DBDA"
 # Predict Placement
 if st.button("Predict Placement"):
-    prediction = predict_student_placement(data, course)
+    prediction = predict_student_placement(data)
     
     placement_status = prediction['Placement Prediction']
     probability_yes = prediction['Probability Yes']

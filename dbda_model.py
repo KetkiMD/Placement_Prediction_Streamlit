@@ -7,18 +7,6 @@ from sklearn.impute import SimpleImputer
 import boto3
 import json
 import os
-            
-# S3 bucket details
-S3_BUCKET_NAME = "glueoutbucket"
-S3_REGION = "us-east-1"
-AWS_ACCESS_KEY_ID = st.secrets["AWS_ACCESS_KEY_ID"]
-AWS_SECRET_ACCESS_KEY = st.secrets["AWS_SECRET_ACCESS_KEY"]
-AWS_SESSION_TOKEN = st.secrets.get("AWS_SESSION_TOKEN", None)  # Optional token
-AWS_REGION = st.secrets["AWS_REGION"]
-LAMBDA_FUNCTION_NAME = "modeloutput"  # Change this if your Lambda function has a different name
-REGION_NAME = "us-east-1"
-
-
 
 
 theory_cols = ['DBMSTheory', 'JavaTheory', 'PythonRTheory', 'StatsTheory', 
@@ -34,6 +22,7 @@ num_cols = ['10th_percentage', 'grad_percentage', 'DBMSTheory', 'DBMSLab', 'Java
              'Higher_Edu_Percent']
 
 cat_cols = ['Grade',  'aptigrade', 'projectgrade', 'branch_cleaned']
+
 
 
 def preprocessing(X_df,preprocessor):
@@ -75,40 +64,27 @@ def preprocessing(X_df,preprocessor):
     return X_df
 
 
-# Function to load a file from S3
-def load_s3_file(folder, file_key):
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        aws_session_token=AWS_SESSION_TOKEN,
-        region_name=S3_REGION
-    )
-    obj = s3.get_object(Bucket=S3_BUCKET_NAME, Key=f"{folder}/{file_key}")
-    return joblib.load(io.BytesIO(obj["Body"].read()))
+import pickle
 
-# Function to load the model based on course
-def load_model(course):
-    if course == "DAC":
-        return load_s3_file("models/dac", "latest_model.pkl")
-    elif course == "DBDA":
-        return load_s3_file("models/dbda", "latest_model.pkl")
-    else:
-        return None
+course="DBDA"
 
-# Function to load the preprocessor based on course
-def load_preprocessor(course):
-    if course == "DAC":
-        return load_s3_file("models/dac", "latest_processor.pkl")
-    elif course == "DBDA":
-        return load_s3_file("models/dbda", "latest_processor.pkl")
-    else:
-        return None
+def load_model():
+    model_path = "dbda_latest_model.pkl"
+    with open(model_path, "rb") as file:
+        model = joblib.load(file)
+    return model  # Ensure it returns the loaded model
+
+def load_preprocessor():
+    preprocessor_path = "dbda_latest_processor.pkl"
+    with open(preprocessor_path, "rb") as file:
+        preprocessor = joblib.load(file)
+    return preprocessor  # Ensure it returns the loaded preprocessor
+
 
 # Function to predict placement probability
-def predict_student_placement(student_data, course):
-    model = load_model(course)
-    preprocessor = load_preprocessor(course)
+def predict_student_placement(student_data):
+    model = load_model()
+    preprocessor = load_preprocessor()
     
     if model is None or preprocessor is None:
         return None
